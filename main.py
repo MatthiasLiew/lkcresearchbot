@@ -371,9 +371,6 @@ async def main() -> None:
         await application.update_queue.put(
             Update.de_json(data=await request.form, bot=application.bot)
         )
-        return jsonify(isError= False,
-                    message= "Success",
-                    statusCode= 200), 200
     
     async with application:
         await application.start()
