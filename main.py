@@ -315,10 +315,11 @@ async def delete_message(chat_id, message_id, time, context):
   except:
     pass
 
-async def main() -> None:
+def main() -> None:
     """Run the bot."""
 
-          
+    persistence = PicklePersistence(filepath="conversationbot")
+    application = Application.builder().token(api_key).persistence(persistence).build()      
     new_question = ConversationHandler(
         entry_points=[CommandHandler("ask_question", ask_question)],
         states={
@@ -360,26 +361,9 @@ async def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(new_question)
     application.add_handler(new_reply)
-    await application.bot.set_webhook(url = "https://GrippingKeyAutosketch.matthiasliew2.repl.co/telegram")
-
-    @app.route("/telegram", methods=["POST"])
-    async def telegram(request):
-        """Handle incoming Telegram updates by putting them into the `update_queue`"""
-        await application.update_queue.put(
-            Update.de_json(data=await jsonify(request.form), bot=application.bot)
-        )
-    
-    async with application:
-      
-      await application.start()
-      await app.run()
-      await application.stop()
-  
-  
-persistence = PicklePersistence(filepath="conversationbot")
-application = Application.builder().token(api_key).persistence(persistence).build()
+    application.run_polling()
 
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

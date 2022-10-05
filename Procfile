@@ -1,1 +1,1 @@
-web: uvicorn main:webserver --workers 4
+web: python main.py $PORT
