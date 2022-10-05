@@ -361,12 +361,13 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(new_question)
     application.add_handler(new_reply)
-    application.run_webhook(listen="0.0.0.0",
-                      port=int(os.environ.get('PORT', 5000)),
-                      url_path=f"/webhook/{api_key}",
-                      webhook_url="https://lkc-med-telegram-bot.herokuapp.com")
+    application.run_polling()
 
 
+@app.route('/', methods=['GET'])
+def home():
+  return "hi"
 
 if __name__ == "__main__":
     main()
+    app.run()
