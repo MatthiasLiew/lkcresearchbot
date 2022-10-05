@@ -7,15 +7,12 @@ from telegram.ext import (Application, CommandHandler, ExtBot, MessageHandler, f
 from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove,InlineKeyboardButton, InlineKeyboardMarkup, Update)
 import logging
 from collections import defaultdict
-from typing import DefaultDict, Optional, Set
+from typing import DefaultDict, Optional, Set, Any, Dict
 from telegram.constants import ParseMode
-import uvicorn
-from starlette.applications import Starlette
-from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response
-from starlette.routing import Route
 import random
+from flask import Flask, jsonify
 
+app = Flask(__name__)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -321,10 +318,7 @@ async def delete_message(chat_id, message_id, time, context):
 async def main() -> None:
     """Run the bot."""
 
-    persistence = PicklePersistence(filepath="conversationbot")
-    application = Application.builder().token(api_key).persistence(persistence).build()
-    
-      
+          
     new_question = ConversationHandler(
         entry_points=[CommandHandler("ask_question", ask_question)],
         states={
@@ -366,35 +360,25 @@ async def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(new_question)
     application.add_handler(new_reply)
-    await application.bot.set_webhook(url = "https://lkc-med-telegram-bot.herokuapp.com/")
+    await application.bot.set_webhook(url = "https://GrippingKeyAutosketch.matthiasliew2.repl.co/telegram")
 
-    async def telegram(request: Request) -> Response:
+    @app.route("/telegram", methods=["POST"])
+    async def telegram(request):
         """Handle incoming Telegram updates by putting them into the `update_queue`"""
         await application.update_queue.put(
-            Update.de_json(data=await request.json(), bot=application.bot)
+            Update.de_json(data=await jsonify(request.form), bot=application.bot)
         )
-        return Response()
-    starlette_app = Starlette(
-            routes=[
-                Route("/", telegram, methods=["POST"])
-            ]
-        )
-      
-    webserver = uvicorn.Server(
-            config=uvicorn.Config(
-                app=starlette_app,
-                port=int(os.environ['PORT']) or 17995,
-                use_colors=False,
-                host="0.0.0.0",
-            )
-        )
-  
+    
     async with application:
-        await application.start()
-        await webserver.serve()
-        await application.stop()
+      
+      await application.start()
+      await app.run()
+      await application.stop()
   
   
+persistence = PicklePersistence(filepath="conversationbot")
+application = Application.builder().token(api_key).persistence(persistence).build()
+
 
 
 if __name__ == "__main__":
