@@ -317,53 +317,55 @@ async def delete_message(chat_id, message_id, time, context):
   except:
     pass
 
+
+persistence = PicklePersistence(filepath="conversationbot")
+application = Application.builder().token(api_key).persistence(persistence).build()
+
+new_question = ConversationHandler(
+    entry_points=[CommandHandler("ask_question", ask_question)],
+    states={
+        TYPING_REPLY: [
+            MessageHandler(
+                filters.TEXT & ~(filters.COMMAND), confirm_question
+            )
+        ],
+        CONFIRM_MESSAGE: [
+            CallbackQueryHandler(confirmed_question, pattern="^(confirm)$"),
+            CallbackQueryHandler(edit_question, pattern="^(edit)$")
+        ],
+    },
+    fallbacks=[CommandHandler("cancel", cancel_question)],
+    name="new_question",
+    persistent=True,
+)
+
+new_reply = ConversationHandler(
+    entry_points=[CallbackQueryHandler(reply_question, pattern="^(reply)")],
+    states={
+        TYPING_REPLY: [
+            MessageHandler(
+                filters.TEXT & ~(filters.COMMAND), confirm_reply
+            ),
+            CallbackQueryHandler(reply_question, pattern="^(reply)")
+        ],
+        CONFIRM_MESSAGE: [
+            CallbackQueryHandler(confirmed_reply, pattern="^(confirm)$"),
+            CallbackQueryHandler(edit_reply, pattern="^(edit)$")
+        ],
+    },
+    fallbacks=[CommandHandler("cancel", cancel_reply)],
+    name="new_reply",
+    persistent=True,
+)
+
+# run track_users in its own group to not interfere with the user handlers
+application.add_handler(CommandHandler("start", start))
+application.add_handler(new_question)
+application.add_handler(new_reply)
+application.run_webhook()
+
 def main() -> None:
     """Run the bot."""
-    persistence = PicklePersistence(filepath="conversationbot")
-    application = Application.builder().token(api_key).persistence(persistence).build()
-
-    new_question = ConversationHandler(
-        entry_points=[CommandHandler("ask_question", ask_question)],
-        states={
-            TYPING_REPLY: [
-                MessageHandler(
-                    filters.TEXT & ~(filters.COMMAND), confirm_question
-                )
-            ],
-            CONFIRM_MESSAGE: [
-                CallbackQueryHandler(confirmed_question, pattern="^(confirm)$"),
-                CallbackQueryHandler(edit_question, pattern="^(edit)$")
-            ],
-        },
-        fallbacks=[CommandHandler("cancel", cancel_question)],
-        name="new_question",
-        persistent=True,
-    )
-
-    new_reply = ConversationHandler(
-        entry_points=[CallbackQueryHandler(reply_question, pattern="^(reply)")],
-        states={
-            TYPING_REPLY: [
-                MessageHandler(
-                    filters.TEXT & ~(filters.COMMAND), confirm_reply
-                ),
-                CallbackQueryHandler(reply_question, pattern="^(reply)")
-            ],
-            CONFIRM_MESSAGE: [
-                CallbackQueryHandler(confirmed_reply, pattern="^(confirm)$"),
-                CallbackQueryHandler(edit_reply, pattern="^(edit)$")
-            ],
-        },
-        fallbacks=[CommandHandler("cancel", cancel_reply)],
-        name="new_reply",
-        persistent=True,
-    )
-    
-    # run track_users in its own group to not interfere with the user handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(new_question)
-    application.add_handler(new_reply)
-    application.run_polling()
     app.run()
 
 
