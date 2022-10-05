@@ -7,12 +7,15 @@ from telegram.ext import (Application, CommandHandler, ExtBot, MessageHandler, f
 from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove,InlineKeyboardButton, InlineKeyboardMarkup, Update)
 import logging
 from collections import defaultdict
-from typing import DefaultDict, Optional, Set, Any, Dict
+from typing import DefaultDict, Optional, Set
 from telegram.constants import ParseMode
+import uvicorn
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse, Response
+from starlette.routing import Route
 import random
-from flask import Flask, jsonify
 
-app = Flask(__name__)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -315,11 +318,10 @@ async def delete_message(chat_id, message_id, time, context):
   except:
     pass
 
-def main() -> None:
+async def main() -> None:
     """Run the bot."""
 
-    persistence = PicklePersistence(filepath="conversationbot")
-    application = Application.builder().token(api_key).persistence(persistence).build()      
+
     new_question = ConversationHandler(
         entry_points=[CommandHandler("ask_question", ask_question)],
         states={
@@ -361,12 +363,39 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(new_question)
     application.add_handler(new_reply)
-    application.run_webhook(listen="0.0.0.0",
-                      port=int(8443),
-                      url_path="/telegram",
-                      webhook_url="https://lkc-med-telegram-bot.herokuapp.com/")
+    await application.bot.set_webhook(url = "https://lkc-med-telegram-bot.herokuapp.com/telegram")
 
+    
+  
+    async with application:
+        await application.start()
+        await webserver.serve()
+        await application.stop()
+  
+persistence = PicklePersistence(filepath="conversationbot")
+application = Application.builder().token(api_key).persistence(persistence).build()
+
+async def telegram(request: Request) -> Response:
+    """Handle incoming Telegram updates by putting them into the `update_queue`"""
+    await application.update_queue.put(
+        Update.de_json(data=await request.json(), bot=application.bot)
+    )
+    return Response()
+starlette_app = Starlette(
+        routes=[
+            Route("/telegram", telegram, methods=["POST"])
+        ]
+    )
+  
+webserver = uvicorn.Server(
+        config=uvicorn.Config(
+            app=starlette_app,
+            port=int(os.environ['PORT']) or 17995,
+            use_colors=False,
+            host="0.0.0.0",
+        )
+    )    
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
