@@ -6,7 +6,7 @@ async-timeout @ https://files.pythonhosted.org/packages/d6/c1/8991e7c5385b897b8c
 attrs @ https://files.pythonhosted.org/packages/f2/bc/d817287d1aa01878af07c19505fafd1165cd6a119e9d0821ca1d1c20312d/attrs-22.1.0-py2.py3-none-any.whl#sha256=86efa402f67bf2df34f51a335487cf46b1ec130d02b8d39fd248abfd30da551c
 backports.zoneinfo @ https://files.pythonhosted.org/packages/1a/ab/3e941e3fcf1b7d3ab3d0233194d99d6a0ed6b24f8f956fc81e47edc8c079/backports.zoneinfo-0.2.1-cp38-cp38-manylinux1_x86_64.whl#sha256=7b0a64cda4145548fed9efc10322770f929b944ce5cee6c0dfe0c87bf4c0c8c9
 CacheControl==0.12.11
-cachetools @ https://files.pythonhosted.org/packages/bf/28/c4f5796c67ad06bb91d98d543a5e01805c1ff065e08871f78e52d2a331ad/cachetools-4.2.2-py3-none-any.whl#sha256=2cc0b89715337ab6dbba85b5b50effe2b0c74e035d83ee8ed637cf52f12ae001
+cachetools==5.2.0
 cachy==0.3.0
 certifi @ https://files.pythonhosted.org/packages/1d/38/fa96a426e0c0e68aabc68e896584b83ad1eec779265a028e156ce509630e/certifi-2022.9.24-py3-none-any.whl#sha256=90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382
 cffi==1.15.1
