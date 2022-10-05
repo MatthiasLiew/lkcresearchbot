@@ -18,7 +18,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-api_key = os.environ['telegram API key']
+api_key = os.environ['telegram_API_key']
 
 research_chat_id = -1001856093938
 
