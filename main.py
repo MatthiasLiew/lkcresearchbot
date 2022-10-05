@@ -363,7 +363,7 @@ async def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(new_question)
     application.add_handler(new_reply)
-    await application.bot.set_webhook(url = "https://lkc-med-telegram-bot.herokuapp.com/telegram")
+    await application.bot.set_webhook(url = "https://lkcresearchtest2-matthiasliew.koyeb.app/telegram")
 
     
   
