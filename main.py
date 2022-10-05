@@ -10,11 +10,9 @@ from collections import defaultdict
 from typing import DefaultDict, Optional, Set
 from telegram.constants import ParseMode
 from flask import Flask
+from flask import request, jsonify
 app = Flask(__name__)
 
-@app.route('/')
-def hello_world():
-    return 'Hello, World!'
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -317,7 +315,7 @@ async def delete_message(chat_id, message_id, time, context):
   except:
     pass
 
-def main() -> None:
+async def main() -> None:
     """Run the bot."""
     persistence = PicklePersistence(filepath="conversationbot")
     application = Application.builder().token(api_key).persistence(persistence).build()
@@ -363,9 +361,25 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(new_question)
     application.add_handler(new_reply)
-    application.run_polling()
+    await application.bot.set_webhook(url = "https://lkc-med-telegram-bot.herokuapp.com/telegram")
+
+
+    @app.route('/telegram', methods=['POST']) 
+    async def telegram():
+        """Handle incoming Telegram updates by putting them into the `update_queue`"""
+      
+        await application.update_queue.put(
+            Update.de_json(data=await request.form, bot=application.bot)
+        )
+        return jsonify(isError= False,
+                    message= "Success",
+                    statusCode= 200), 200
+
+    async with application:
+        await application.start()
+        await app.run()
+        await application.stop()
 
 
 if __name__ == "__main__":
     main()
-    app.run()
