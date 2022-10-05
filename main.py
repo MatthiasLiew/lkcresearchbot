@@ -9,9 +9,12 @@ import logging
 from collections import defaultdict
 from typing import DefaultDict, Optional, Set
 from telegram.constants import ParseMode
-from flask import Flask
-from flask import request, jsonify
-app = Flask(__name__)
+import uvicorn
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse, Response
+from starlette.routing import Route
+import random
 
 
 logging.basicConfig(
@@ -361,20 +364,34 @@ async def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(new_question)
     application.add_handler(new_reply)
-    await application.bot.set_webhook(url = "https://lkc-med-telegram-bot.herokuapp.com/")
+    await application.bot.set_webhook(url = "https://lkc-med-telegram-bot.herokuapp.com//telegram")
 
 
-    @app.route('/', methods=['POST']) 
-    async def telegram():
+    async def telegram(request: Request) -> Response:
         """Handle incoming Telegram updates by putting them into the `update_queue`"""
-      
         await application.update_queue.put(
-            Update.de_json(data=await jsonify(request.form), bot=application.bot)
+            Update.de_json(data=await request.json(), bot=application.bot)
         )
-    
+        return Response()
+
+    starlette_app = Starlette(
+        routes=[
+            Route("/telegram", telegram, methods=["POST"])
+        ]
+    )
+  
+    webserver = uvicorn.Server(
+        config=uvicorn.Config(
+            app=starlette_app,
+            port=random.randint(2000, 9000),
+            use_colors=False,
+            host="0.0.0.0",
+        )
+    )
+  
     async with application:
         await application.start()
-        await app.run()
+        await webserver.serve()
         await application.stop()
   
 
