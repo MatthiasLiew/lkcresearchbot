@@ -374,12 +374,15 @@ async def main() -> None:
         return jsonify(isError= False,
                     message= "Success",
                     statusCode= 200), 200
-
+    
     async with application:
         await application.start()
         await app.run()
         await application.stop()
+  
+
+    
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
