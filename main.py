@@ -9,7 +9,12 @@ import logging
 from collections import defaultdict
 from typing import DefaultDict, Optional, Set
 from telegram.constants import ParseMode
+from flask import Flask
+app = Flask(__name__)
 
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -359,6 +364,7 @@ def main() -> None:
     application.add_handler(new_question)
     application.add_handler(new_reply)
     application.run_polling()
+    app.run()
 
 
 if __name__ == "__main__":
