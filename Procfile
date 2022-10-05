@@ -1,1 +1,1 @@
-worker: uvicorn main:webserver --workers 4
+web: uvicorn main:webserver --workers 4
