@@ -321,7 +321,29 @@ async def delete_message(chat_id, message_id, time, context):
 async def main() -> None:
     """Run the bot."""
 
-
+    persistence = PicklePersistence(filepath="conversationbot")
+    application = Application.builder().token(api_key).persistence(persistence).build()
+    
+    async def telegram(request: Request) -> Response:
+        """Handle incoming Telegram updates by putting them into the `update_queue`"""
+        await application.update_queue.put(
+            Update.de_json(data=await request.json(), bot=application.bot)
+        )
+        return Response()
+    starlette_app = Starlette(
+            routes=[
+                Route("/telegram", telegram, methods=["POST"])
+            ]
+        )
+      
+    webserver = uvicorn.Server(
+            config=uvicorn.Config(
+                app=starlette_app,
+                port=os.environ['PORT'] or 17995,
+                use_colors=False,
+                host="0.0.0.0",
+            )
+        )  
     new_question = ConversationHandler(
         entry_points=[CommandHandler("ask_question", ask_question)],
         states={
@@ -372,29 +394,7 @@ async def main() -> None:
         await webserver.serve()
         await application.stop()
   
-persistence = PicklePersistence(filepath="conversationbot")
-application = Application.builder().token(api_key).persistence(persistence).build()
-
-async def telegram(request: Request) -> Response:
-    """Handle incoming Telegram updates by putting them into the `update_queue`"""
-    await application.update_queue.put(
-        Update.de_json(data=await request.json(), bot=application.bot)
-    )
-    return Response()
-starlette_app = Starlette(
-        routes=[
-            Route("/telegram", telegram, methods=["POST"])
-        ]
-    )
   
-webserver = uvicorn.Server(
-        config=uvicorn.Config(
-            app=starlette_app,
-            port=os.environ['PORT'] or 17995,
-            use_colors=False,
-            host="0.0.0.0",
-        )
-    )    
 
 
 if __name__ == "__main__":
