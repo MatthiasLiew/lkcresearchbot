@@ -362,12 +362,7 @@ new_reply = ConversationHandler(
 application.add_handler(CommandHandler("start", start))
 application.add_handler(new_question)
 application.add_handler(new_reply)
-application.run_webhook()
-
-def main() -> None:
-    """Run the bot."""
-    app.run()
-
+application.run_polling()
 
 if __name__ == "__main__":
-    main()
+    app.run()
