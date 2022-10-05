@@ -369,7 +369,7 @@ async def main() -> None:
         """Handle incoming Telegram updates by putting them into the `update_queue`"""
       
         await application.update_queue.put(
-            Update.de_json(data=await request.form, bot=application.bot)
+            Update.de_json(data=await jsonify(request.form), bot=application.bot)
         )
     
     async with application:
