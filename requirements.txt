@@ -53,7 +53,7 @@ pyflakes @ https://files.pythonhosted.org/packages/dc/13/63178f59f74e53acc2165ae
 pylev==1.4.0
 pyparsing @ https://files.pythonhosted.org/packages/6c/10/a7d0fa5baea8fe7b50f448ab742f26f52b80bfca85ac2be9d35cdd9a3246/pyparsing-3.0.9-py3-none-any.whl#sha256=5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc
 python-lsp-jsonrpc @ https://files.pythonhosted.org/packages/06/ee/754bfd5f6bfe7162c10d3ecb0aeef6f882f91d3231596c83f761a75efd0b/python_lsp_jsonrpc-1.0.0-py3-none-any.whl#sha256=079b143be64b0a378bdb21dff5e28a8c1393fe7e8a654ef068322d754e545fc7
-python-telegram-bot @ https://files.pythonhosted.org/packages/4c/b1/748afa9e63427c8986b69a8dbbb75281c626191125b73826713092b30f3c/python_telegram_bot-13.14-py3-none-any.whl#sha256=79abc66355af2310bbaaf7f41746230b996434e287f21f27070c92978dc0964f
+python-telegram-bot=20.0a4
 pytoolconfig @ https://files.pythonhosted.org/packages/26/15/e21a7c063c29c0b782be090df589b25fdc62ea3b5e5687a94a217851944e/pytoolconfig-1.2.2-py3-none-any.whl#sha256=825d97b052e58b609c2684b04efeb543075588d33a4916a6dc2ae39676458c7d
 pytz @ https://files.pythonhosted.org/packages/d8/66/309545413162bc8271c73e622499a41cdc37217b499febe26155ff9f93ed/pytz-2022.4-py2.py3-none-any.whl#sha256=2c0784747071402c6e99f0bafdb7da0fa22645f06554c7ae06bf6358897e9c91
 pytz-deprecation-shim @ https://files.pythonhosted.org/packages/eb/73/3eaab547ca809754e67e06871cff0fc962bafd4b604e15f31896a0f94431/pytz_deprecation_shim-0.1.0.post0-py2.py3-none-any.whl#sha256=8314c9692a636c8eb3bda879b9f119e350e93223ae83e70e80c31675a0fdc1a6
