@@ -364,7 +364,7 @@ def main() -> None:
     application.run_webhook(listen="0.0.0.0",
                       port=int(8443),
                       url_path="/telegram",
-                      webhook_url="https://GrippingKeyAutosketch.matthiasliew2.repl.co/")
+                      webhook_url="https://lkc-med-telegram-bot.herokuapp.com/")
 
 
 
