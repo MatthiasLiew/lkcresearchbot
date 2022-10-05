@@ -390,7 +390,7 @@ starlette_app = Starlette(
 webserver = uvicorn.Server(
         config=uvicorn.Config(
             app=starlette_app,
-            port=int(os.environ['PORT']) or 17995,
+            port=443,
             use_colors=False,
             host="0.0.0.0",
         )
