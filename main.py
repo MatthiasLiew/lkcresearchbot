@@ -361,13 +361,12 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(new_question)
     application.add_handler(new_reply)
-    application.run_polling()
+    application.run_webhook(listen="0.0.0.0",
+                      port=int(8443),
+                      url_path="/telegram",
+                      webhook_url="https://GrippingKeyAutosketch.matthiasliew2.repl.co/")
 
 
-@app.route('/', methods=['GET'])
-def home():
-  return "hi"
 
 if __name__ == "__main__":
     main()
-    app.run()
