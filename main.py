@@ -324,26 +324,7 @@ async def main() -> None:
     persistence = PicklePersistence(filepath="conversationbot")
     application = Application.builder().token(api_key).persistence(persistence).build()
     
-    async def telegram(request: Request) -> Response:
-        """Handle incoming Telegram updates by putting them into the `update_queue`"""
-        await application.update_queue.put(
-            Update.de_json(data=await request.json(), bot=application.bot)
-        )
-        return Response()
-    starlette_app = Starlette(
-            routes=[
-                Route("/", telegram, methods=["POST"])
-            ]
-        )
       
-    webserver = uvicorn.Server(
-            config=uvicorn.Config(
-                app=starlette_app,
-                port=int(os.environ['PORT']) or 17995,
-                use_colors=False,
-                host="0.0.0.0",
-            )
-        )  
     new_question = ConversationHandler(
         entry_points=[CommandHandler("ask_question", ask_question)],
         states={
@@ -387,7 +368,26 @@ async def main() -> None:
     application.add_handler(new_reply)
     await application.bot.set_webhook(url = "https://lkc-med-telegram-bot.herokuapp.com/")
 
-    
+    async def telegram(request: Request) -> Response:
+        """Handle incoming Telegram updates by putting them into the `update_queue`"""
+        await application.update_queue.put(
+            Update.de_json(data=await request.json(), bot=application.bot)
+        )
+        return Response()
+    starlette_app = Starlette(
+            routes=[
+                Route("/", telegram, methods=["POST"])
+            ]
+        )
+      
+    webserver = uvicorn.Server(
+            config=uvicorn.Config(
+                app=starlette_app,
+                port=int(os.environ['PORT']) or 17995,
+                use_colors=False,
+                host="0.0.0.0",
+            )
+        )
   
     async with application:
         await application.start()
