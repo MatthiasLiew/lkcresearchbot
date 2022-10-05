@@ -363,8 +363,8 @@ def main() -> None:
     application.add_handler(new_reply)
     application.run_webhook(listen="0.0.0.0",
                       port=int(os.environ.get('PORT', 5000)),
-                      url_path="/telegram",
-                      webhook_url="https://lkc-med-telegram-bot.herokuapp.com/telegram")
+                      url_path=f"/webhook/{api_key}",
+                      webhook_url="https://lkc-med-telegram-bot.herokuapp.com")
 
 
 
