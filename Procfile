@@ -1,1 +1,1 @@
-web: uvicorn main:webserver --workers 4
+web: python3 main.py
