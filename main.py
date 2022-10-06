@@ -24,7 +24,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-api_key = os.environ['telegram_API_key']
+TOKEN = os.environ['telegram_API_key']
+PORT = int(os.environ.get('PORT', 8443))
 
 research_chat_id = -1001856093938
 
@@ -321,7 +322,7 @@ async def delete_message(chat_id, message_id, time, context):
 async def main() -> None:
     """Run the bot."""
     persistence = PicklePersistence(filepath="conversationbot")
-    application = Application.builder().token(api_key).persistence(persistence).build()
+    application = Application.builder().token(TOKEN).persistence(persistence).build()
 
     new_question = ConversationHandler(
         entry_points=[CommandHandler("ask_question", ask_question)],
@@ -364,7 +365,7 @@ async def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(new_question)
     application.add_handler(new_reply)
-    await application.bot.set_webhook(url = "https://lkcresearchtest2-matthiasliew.koyeb.app/telegram")
+    await application.bot.set_webhook(url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}")
 
     async def telegram(request: Request) -> Response:
       """Handle incoming Telegram updates by putting them into the `update_queue`"""
@@ -375,14 +376,14 @@ async def main() -> None:
     
     starlette_app = Starlette(
             routes=[
-                Route("/telegram", telegram, methods=["POST"])
+                Route(f"/{TOKEN}", telegram, methods=["POST"])
             ]
         )
       
     webserver = uvicorn.Server(
             config=uvicorn.Config(
                 app=starlette_app,
-                port=443,
+                port=PORT,
                 use_colors=False,
                 host="0.0.0.0",
             )
