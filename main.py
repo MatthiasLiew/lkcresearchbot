@@ -321,8 +321,7 @@ async def delete_message(chat_id, message_id, time, context):
 
 async def main() -> None:
     """Run the bot."""
-    persistence = PicklePersistence(filepath="conversationbot")
-    application = Application.builder().token(TOKEN).persistence(persistence).build()
+
 
     new_question = ConversationHandler(
         entry_points=[CommandHandler("ask_question", ask_question)],
@@ -367,33 +366,36 @@ async def main() -> None:
     application.add_handler(new_reply)
     await application.bot.set_webhook(url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}")
 
-    async def telegram(request: Request) -> Response:
-      """Handle incoming Telegram updates by putting them into the `update_queue`"""
-      await application.update_queue.put(
-          Update.de_json(data=await request.json(), bot=application.bot)
-      )
-      return Response()
     
-    starlette_app = Starlette(
-            routes=[
-                Route(f"/{TOKEN}", telegram, methods=["POST"])
-            ]
-        )
-      
-    webserver = uvicorn.Server(
-            config=uvicorn.Config(
-                app=starlette_app,
-                port=PORT,
-                use_colors=False,
-                host="0.0.0.0",
-            )
-        )    
 
     async with application:
         await application.start()
         await webserver.serve()
         await application.stop()
 
+persistence = PicklePersistence(filepath="conversationbot")
+application = Application.builder().token(TOKEN).persistence(persistence).build()
 
+async def telegram(request: Request) -> Response:
+      """Handle incoming Telegram updates by putting them into the `update_queue`"""
+      await application.update_queue.put(
+          Update.de_json(data=await request.json(), bot=application.bot)
+      )
+      return Response()
+    
+starlette_app = Starlette(
+        routes=[
+            Route(f"/{TOKEN}", telegram, methods=["POST"])
+        ]
+    )
+  
+webserver = uvicorn.Server(
+        config=uvicorn.Config(
+            app=starlette_app,
+            port=PORT,
+            use_colors=False,
+            host="0.0.0.0",
+        )
+    )    
 if __name__ == "__main__":
     asyncio.run(main())
