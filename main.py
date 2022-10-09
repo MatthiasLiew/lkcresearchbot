@@ -9,11 +9,6 @@ import logging
 from collections import defaultdict
 from typing import DefaultDict, Optional, Set
 from telegram.constants import ParseMode
-import uvicorn
-from starlette.applications import Starlette
-from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response
-from starlette.routing import Route
 import random
 
 
@@ -319,6 +314,9 @@ async def delete_message(chat_id, message_id, time, context):
   except:
     pass
 
+async def handle_wix_requests(update: Update, context: ContextTypes.DEFAULT_TYPE):
+  await context.bot.send_message(research_chat_id, "hello")
+
 def main() -> None:
     """Run the bot."""
 
@@ -364,6 +362,9 @@ def main() -> None:
     
     # run track_users in its own group to not interfere with the user handlers
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(
+      filters.TEXT & ~(filters.COMMAND), handle_wix_requests
+    ))
     application.add_handler(new_question)
     application.add_handler(new_reply)
     application.run_webhook(
