@@ -315,7 +315,7 @@ async def delete_message(chat_id, message_id, time, context):
     pass
 
 async def handle_wix_requests(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  await context.bot.send_message(research_chat_id, "hello")
+  await context.bot.send_message(research_chat_id, update.message.chat.id)
 
 def main() -> None:
     """Run the bot."""
