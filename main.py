@@ -23,6 +23,7 @@ TOKEN = os.environ['telegram_API_key']
 PORT = int(os.environ.get('PORT', 8443))
 
 research_chat_id = -1001856093938
+testing_group_id = -829275448
 
 sgTz = pytz.timezone("Asia/Singapore") 
 
@@ -315,7 +316,7 @@ async def delete_message(chat_id, message_id, time, context):
     pass
 
 async def handle_wix_requests(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  await context.bot.send_message(research_chat_id, update.message.chat.id)
+  await context.bot.send_message(testing_group_id, update.message.chat.id)
 
 def main() -> None:
     """Run the bot."""
