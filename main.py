@@ -316,7 +316,7 @@ async def delete_message(chat_id, message_id, time, context):
     pass
 
 async def handle_wix_requests(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  await context.bot.send_message(testing_group_id, update.message.chat.id)
+    await context.bot.send_message(testing_group_id, update.message.text)
 
 def main() -> None:
     """Run the bot."""
@@ -364,7 +364,7 @@ def main() -> None:
     # run track_users in its own group to not interfere with the user handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(
-      filters.TEXT & ~(filters.COMMAND), handle_wix_requests
+      filters.TEXT & filters.User(username="testemail@e.ntu.edu.sg") & ~(filters.COMMAND), handle_wix_requests
     ))
     application.add_handler(new_question)
     application.add_handler(new_reply)
