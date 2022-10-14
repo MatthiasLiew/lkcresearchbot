@@ -35,14 +35,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
       "Send /help for more info on the available commands and resources."
   )
 
-async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ask_question(update, context: ContextTypes.DEFAULT_TYPE):
   reply = await update.message.reply_text(
       "Ok! Fire away! Questions will be sent to the LKC Research Committee and they will get back to you shortly\n\n"
     "You may type /cancel anytime to cancel asking your question."
   )
   
   context.user_data["question_info"] = [reply.id, reply.chat.id]
-  context.user_data["question_to_delete"] = {}
+  context.user_data["question_to_delete"] = {reply.id: reply.chat.id}
 
   return TYPING_REPLY
 
@@ -93,8 +93,7 @@ async def confirmed_question(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
   date = datetime.now(sgTz)
 
-  to_send = f"""
-  #{no_of_questions}, {date}
+  to_send = f"""#{no_of_questions}, {date}
 
 Question by {first_name} {last_name}, @{username}:
 
@@ -103,19 +102,29 @@ Question by {first_name} {last_name}, @{username}:
   reply_keyboard = [
     [InlineKeyboardButton("Reply", callback_data=f"reply {user_id}")]
   ]
-  
-  await context.bot.send_message(research_chat_id, to_send, reply_markup=InlineKeyboardMarkup(
-          reply_keyboard, one_time_keyboard=True
-    )
-  )
 
-  await update.callback_query.edit_message_text(
+  if "follow_up_info" in context.user_data:
+    to_send = "[FOLLOW-UP]\n" + to_send
+    last_message = context.user_data["last_replied_question"]
+    await last_message.reply_text(to_send, reply_markup=InlineKeyboardMarkup(
+          reply_keyboard, one_time_keyboard=True
+    ))
+    del context.user_data["last_replied_question"]
+    del context.user_data["follow_up_info"]
+  else:
+    await context.bot.send_message(research_chat_id, to_send, reply_markup=InlineKeyboardMarkup(
+          reply_keyboard, one_time_keyboard=True
+      )
+    )
+
+  await update.callback_query.message.reply_text(
       "Question successfully submitted!"
   )
   
   for key, val in context.user_data["question_to_delete"].items():
     await delete_message(chat_id = val, message_id = key, time = 0, context = context)
   del context.user_data["question_to_delete"]
+  del context.user_data["question_info"]
 
   return ConversationHandler.END
 
@@ -132,20 +141,61 @@ async def edit_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cancel_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
   """Cancels and ends the conversation."""
   user = update.message.from_user
-  context.user_data["question_to_delete"][update.message.id] = update.message.chat.id
+  try:
+    context.user_data["question_to_delete"][update.message.id] = update.message.chat.id
+  except:
+    pass
   logger.info("User %s canceled the conversation.", user.first_name)
   cancel_message = await update.message.reply_text(
       "Cancelled. Feel free to continue browsing!")
 
-  for key, val in context.user_data["question_to_delete"].items():
+  question_info = context.user_data["question_info"]
+  question_message_id = question_info[0]
+  question_chat_id = question_info[1]
+  
+  if "follow_up_info" in context.user_data:
+    follow_up_info = context.user_data["follow_up_info"]
+    reply_keyboard = reply_keyboard = [
+      [InlineKeyboardButton("Ask Follow-Up Question", callback_data=f"follow_up {follow_up_info[2]}")]
+    ]
+    await context.bot.edit_message_text(
+      follow_up_info[3], message_id = follow_up_info[0], chat_id = follow_up_info[1],
+      reply_markup=InlineKeyboardMarkup(
+          reply_keyboard, one_time_keyboard=True
+      )
+    )
+  else:
+    await context.bot.edit_message_text(
+      "Cancelled.", message_id = question_message_id, chat_id = question_chat_id
+    )
+   
+  try:
+    for key, val in context.user_data["question_to_delete"].items():
       await delete_message(chat_id = val, message_id = key, time = 0, context = context)
-  del context.user_data["question_to_delete"]
+    del context.user_data["question_to_delete"]
+    del context.user_data["question_info"]
+    del context.user_data["follow_up_info"]
+  except:
+    pass
 
   await delete_message(cancel_message.chat.id, cancel_message.id, 1.5, context)
 
   return ConversationHandler.END
 
+async def follow_up_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+  await update.callback_query.answer()
+  replied_question_id = int(update.callback_query.data.split()[1])
+  context.user_data["last_replied_question"] = context.bot_data["saved_messages"][replied_question_id]
 
+  previous_msg_text = update.callback_query.message.text
+  previous_msg_id = update.callback_query.message.message_id
+  previous_msg_chat_id = update.callback_query.message.chat.id
+  
+  context.user_data["follow_up_info"] = [previous_msg_id, previous_msg_chat_id, replied_question_id, previous_msg_text]
+
+  await update.callback_query.message.edit_reply_markup()
+
+  return await ask_question(update.callback_query, context)
 
 async def reply_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
   await update.callback_query.answer()
@@ -226,8 +276,13 @@ Question:
 Reply:
 {msg}
   """
-  
-  await context.bot.send_message(question_user_id, to_send)
+
+  reply_keyboard = reply_keyboard = [
+    [InlineKeyboardButton("Ask Follow-Up Question", callback_data=f"follow_up {question_message_id}")]
+  ]
+  await context.bot.send_message(question_user_id, to_send, reply_markup=InlineKeyboardMarkup(
+          reply_keyboard, one_time_keyboard=True
+      ))
 
   await update.callback_query.edit_message_text(
       "Reply successfully submitted!"
@@ -238,10 +293,16 @@ Reply:
 {complete_question_text}
 
 Reply by {first_name} {last_name}, @{username} on {date}:
+
 {msg}
 """
 
-  await context.bot.edit_message_text(replied_message, message_id = question_message_id, chat_id = question_chat_id)
+  message_to_save = await context.bot.edit_message_text(replied_message, message_id = question_message_id, chat_id = question_chat_id)
+
+  if "saved_messages" not in context.bot_data:
+    context.bot_data["saved_messages"] = {}
+  
+  context.bot_data["saved_messages"][question_message_id] = message_to_save
   
   del context.user_data["reply_msg"]
   del context.user_data["reply_info"]
@@ -315,8 +376,36 @@ async def delete_message(chat_id, message_id, time, context):
   except:
     pass
 
+
 async def handle_wix_requests(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(testing_group_id, update.message.text)
+  if not "no_of_wix_questions" in context.bot_data:
+      context.bot_data["no_of_wix_questions"] = 0
+  
+  context.bot_data["no_of_wix_questions"] += 1
+  no_of_questions = context.bot_data["no_of_wix_questions"]
+
+  sender = update.message.from_user
+
+  full_name = sender.first_name
+  email = sender.last_name
+
+  msg = update.message.text
+
+  date = datetime.now(sgTz)
+  
+  question = f"""
+  [WIX] #{no_of_questions}, {date}
+
+Question by {full_name}, {email}:
+
+{msg}
+  """
+  reply_keyboard = [
+    [InlineKeyboardButton("Reply", callback_data=f"replyemail {email}")]
+  ]  
+  await context.bot.send_message(testing_group_id, question, reply_markup=InlineKeyboardMarkup(
+          reply_keyboard, one_time_keyboard=True
+      ))
 
 def main() -> None:
     """Run the bot."""
@@ -324,8 +413,11 @@ def main() -> None:
     persistence = PicklePersistence(filepath="conversationbot")
     application = Application.builder().token(TOKEN).persistence(persistence).build()
   
-    new_question = ConversationHandler(
-        entry_points=[CommandHandler("ask_question", ask_question)],
+    tele_question = ConversationHandler(
+        entry_points=[
+          CommandHandler("ask_question", ask_question),
+          CallbackQueryHandler(follow_up_question, pattern="^(follow_up)")
+        ],
         states={
             TYPING_REPLY: [
                 MessageHandler(
@@ -342,7 +434,7 @@ def main() -> None:
         persistent=True,
     )
 
-    new_reply = ConversationHandler(
+    tele_reply = ConversationHandler(
         entry_points=[CallbackQueryHandler(reply_question, pattern="^(reply)")],
         states={
             TYPING_REPLY: [
@@ -366,15 +458,15 @@ def main() -> None:
     application.add_handler(MessageHandler(
       filters.TEXT & filters.User(username="testemail@e.ntu.edu.sg") & ~(filters.COMMAND), handle_wix_requests
     ))
-    application.add_handler(new_question)
-    application.add_handler(new_reply)
-    application.run_webhook(
-      listen = "0.0.0.0",
-      port = PORT,
-      url_path = TOKEN,
-      webhook_url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}"
-    )
-
+    application.add_handler(tele_question)
+    application.add_handler(tele_reply)
+    #application.run_webhook(
+    #  listen = "0.0.0.0",
+    #  port = PORT,
+    #  url_path = TOKEN,
+    #  webhook_url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}"
+    #)
+    application.run_polling()
 
 
     
