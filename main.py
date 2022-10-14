@@ -34,8 +34,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
       "Hi! The LKC Medicine Research Bot is ready to serve!\n\n"
       "Send /help for more info on the available commands and resources."
   )
-  context.bot_data["answered_questions"] = context.bot_data["saved_messages"]
-  del context.bot_data["saved_messages"]
 
 async def ask_question(update, context: ContextTypes.DEFAULT_TYPE):
   reply = await update.message.reply_text(
@@ -187,15 +185,13 @@ async def cancel_question(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def follow_up_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
   await update.callback_query.answer()
   replied_question_id = int(update.callback_query.data.split()[1])
-  context.user_data["last_replied_question"] = context.bot_data["answered_questions"][replied_question_id]
+  context.user_data["last_replied_question"] = context.bot_data["answered_questions"][replied_question_id][0]
 
   previous_msg_text = update.callback_query.message.text
   previous_msg_id = update.callback_query.message.message_id
   previous_msg_chat_id = update.callback_query.message.chat.id
   
   context.user_data["follow_up_info"] = [previous_msg_id, previous_msg_chat_id, replied_question_id, previous_msg_text]
-
-  await update.callback_query.message.edit_reply_markup()
 
   return await ask_question(update.callback_query, context)
 
@@ -206,11 +202,11 @@ async def reply_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if context.user_data['in_reply_conversation']:
       chat = update.callback_query.message.chat
       await chat.send_message("You cannot reply to this message until you have replied to the message that you previously wished to reply to. Otherwise send /cancel to cancel the reply to the previous asker and then press the reply button on this message again.")
-      return TYPING_REPLY
+      return ConversationHandler.END
 
   context.user_data['in_reply_conversation'] = True
   
-  user_to_reply = update.callback_query.data.split()[1]
+  user_to_reply = int(update.callback_query.data.split()[1])
   previous_msg_text = update.callback_query.message.text
   previous_msg_id = update.callback_query.message.id
   previous_msg_chat_id = update.callback_query.message.chat.id
@@ -218,10 +214,18 @@ async def reply_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
   context.user_data["reply_info"] = [user_to_reply, previous_msg_text, previous_msg_id, previous_msg_chat_id]
   context.user_data["reply_to_delete"] = {}
   
-  await update.callback_query.edit_message_text(
+  new_reply = await update.callback_query.message.reply_text(
       "Alright! Just type down your response and send it!"
   )
 
+  context.user_data["reply_to_delete"][new_reply.message_id] = new_reply.chat.id
+  context.user_data["curr_convo"] = [new_reply.message_id, new_reply.chat.id]
+
+  if update.callback_query.data.split()[0] == "edit_response":
+    context.user_data["reply_info"].append(int(update.callback_query.data.split()[2]))
+
+  await update.callback_query.message.edit_reply_markup()
+  
   return TYPING_REPLY
 
 async def confirm_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -234,9 +238,9 @@ async def confirm_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
   context.user_data["reply_msg"] = msg
   context.user_data["reply_to_delete"][update.message.id] = update.message.chat.id
   
-  question_info = context.user_data["reply_info"]
-  question_message_id = question_info[2]
-  question_chat_id = question_info[3]
+  question_info = context.user_data["curr_convo"]
+  question_message_id = question_info[0]
+  question_chat_id = question_info[1]
   
   await context.bot.edit_message_text(
       "Got it! Just to confirm, is this the reply that you want to send?\n\n"
@@ -269,20 +273,32 @@ async def confirmed_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
   question_message_id = question_info[2]
   question_chat_id = question_info[3]
 
-  to_send = f"""
+  to_send_header = f"""
 Reply by {first_name} {last_name}, @{username}:
-
+"""
+  to_send_template = f"""
 Question:
 {question_text}
 
-Reply:
-{msg}
-  """
+Reply:"""
 
-  reply_keyboard = reply_keyboard = [
+  to_send = to_send_header + to_send_template + f"\n{msg}"
+
+  reply_keyboard = [
     [InlineKeyboardButton("Ask Follow-Up Question", callback_data=f"follow_up {question_message_id}")]
   ]
-  await context.bot.send_message(question_user_id, to_send, reply_markup=InlineKeyboardMarkup(
+  if len(context.user_data["reply_info"]) > 4:
+    question_user_reply_id = question_info[4]
+    previous_reply = context.bot_data["replies"][question_user_id][question_user_reply_id] 
+    replied = previous_reply[0]
+    to_send_header = previous_reply[1]
+    to_send_template = previous_reply[2]
+    to_send = to_send_header + f"Last Edit by {first_name} {last_name}, @{username}:\n" + to_send_template + f"\n{msg}"
+    replied = await replied.edit_text(to_send, reply_markup=InlineKeyboardMarkup(
+          reply_keyboard, one_time_keyboard=True
+      ))
+  else:
+    replied = await context.bot.send_message(question_user_id, to_send, reply_markup=InlineKeyboardMarkup(
           reply_keyboard, one_time_keyboard=True
       ))
 
@@ -291,23 +307,37 @@ Reply:
   )
 
   date = datetime.now(sgTz)
-  replied_message = f"""[REPLIED]
+  replied_template = f"""[REPLIED]
 {complete_question_text}
 
 Reply by {first_name} {last_name}, @{username} on {date}:
-
-{msg}
 """
+  replied_message = replied_template + f"\n{msg}"
 
-  message_to_save = await context.bot.edit_message_text(replied_message, message_id = question_message_id, chat_id = question_chat_id)
+  edit_keyboard = [
+    [InlineKeyboardButton("Edit Response", callback_data=f"edit_response {question_user_id} {replied.message_id}")]
+  ]
+  if len(context.user_data["reply_info"]) > 4:
+    replied_template = context.bot_data["answered_questions"][question_message_id][1]
+    replied_message = replied_template + f"Last Edit by {first_name} {last_name}, @{username} on {date}:\n" + f"\n{msg}"
+    
+  message_to_save = await context.bot.edit_message_text(replied_message, message_id = question_message_id, chat_id = question_chat_id, reply_markup=InlineKeyboardMarkup(
+          edit_keyboard, one_time_keyboard=True
+      ))
 
   if "answered_questions" not in context.bot_data:
     context.bot_data["answered_questions"] = {}
+  if "replies" not in context.bot_data:
+    context.bot_data["replies"] = {}
+  if question_user_id not in context.bot_data["replies"]:
+    context.bot_data["replies"][question_user_id] = {}
   
-  context.bot_data["answered_questions"][question_message_id] = message_to_save
+  context.bot_data["answered_questions"][question_message_id] = [message_to_save, replied_template]
+  context.bot_data["replies"][question_user_id][replied.message_id] = [replied, to_send_header, to_send_template]
   
   del context.user_data["reply_msg"]
   del context.user_data["reply_info"]
+  del context.user_data["curr_convo"]
 
   context.user_data['in_reply_conversation'] = False
 
@@ -359,6 +389,8 @@ async def cancel_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     del context.user_data["reply_msg"]
   if "reply_info" in context.user_data:
     del context.user_data["reply_info"]
+  if "curr_convo" in context.user_data:
+    del context.user_data["curr_convo"]
   context.user_data['in_reply_conversation'] = False
 
   for key, val in context.user_data["reply_to_delete"].items():
@@ -437,7 +469,10 @@ def main() -> None:
     )
 
     tele_reply = ConversationHandler(
-        entry_points=[CallbackQueryHandler(reply_question, pattern="^(reply)")],
+        entry_points=[
+          CallbackQueryHandler(reply_question, pattern="^(reply)"),
+          CallbackQueryHandler(reply_question, pattern="^(edit_response)")
+        ],
         states={
             TYPING_REPLY: [
                 MessageHandler(
@@ -468,7 +503,6 @@ def main() -> None:
       url_path = TOKEN,
       webhook_url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}"
     )
-
 
     
 if __name__ == "__main__":
