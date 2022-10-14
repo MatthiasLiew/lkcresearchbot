@@ -371,9 +371,15 @@ async def cancel_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     reset_message_text = reset_message_info[1]
     reset_message_id = reset_message_info[2]
     reset_message_chat_id = reset_message_info[3]
-    reply_keyboard = [
-      [InlineKeyboardButton("Reply", callback_data=f"reply {reset_message_user_id}")]
-    ]
+    if len(context.user_data["reply_info"]) > 4:
+      
+      reply_keyboard = [
+        [InlineKeyboardButton("Edit Response", callback_data=f"edit_response {reset_message_user_id} {reset_message_info[4]}")]
+      ]
+    else:
+      reply_keyboard = [
+        [InlineKeyboardButton("Reply", callback_data=f"reply {reset_message_user_id}")]
+      ]
     
     await context.bot.edit_message_text(reset_message_text, message_id = reset_message_id, chat_id = reset_message_chat_id, reply_markup=InlineKeyboardMarkup(
           reply_keyboard, one_time_keyboard=True
@@ -497,13 +503,13 @@ def main() -> None:
     ))
     application.add_handler(tele_question)
     application.add_handler(tele_reply)
-    application.run_webhook(
-      listen = "0.0.0.0",
-      port = PORT,
-      url_path = TOKEN,
-      webhook_url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}"
-    )
-
+    #application.run_webhook(
+    #  listen = "0.0.0.0",
+    #  port = PORT,
+    #  url_path = TOKEN,
+    #  webhook_url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}"
+    #)
+    application.run_polling()
     
 if __name__ == "__main__":
     main()
