@@ -503,13 +503,13 @@ def main() -> None:
     ))
     application.add_handler(tele_question)
     application.add_handler(tele_reply)
-    #application.run_webhook(
-    #  listen = "0.0.0.0",
-    #  port = PORT,
-    #  url_path = TOKEN,
-    #  webhook_url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}"
-    #)
-    application.run_polling()
+    application.run_webhook(
+      listen = "0.0.0.0",
+      port = PORT,
+      url_path = TOKEN,
+      webhook_url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}"
+    )
+    #application.run_polling()
     
 if __name__ == "__main__":
     main()
