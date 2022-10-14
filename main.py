@@ -34,6 +34,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
       "Hi! The LKC Medicine Research Bot is ready to serve!\n\n"
       "Send /help for more info on the available commands and resources."
   )
+  context.bot_data["answered_questions"] = context.bot_data["saved_messages"]
+  del context.bot_data["saved_messages"]
 
 async def ask_question(update, context: ContextTypes.DEFAULT_TYPE):
   reply = await update.message.reply_text(
@@ -185,7 +187,7 @@ async def cancel_question(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def follow_up_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
   await update.callback_query.answer()
   replied_question_id = int(update.callback_query.data.split()[1])
-  context.user_data["last_replied_question"] = context.bot_data["saved_messages"][replied_question_id]
+  context.user_data["last_replied_question"] = context.bot_data["answered_questions"][replied_question_id]
 
   previous_msg_text = update.callback_query.message.text
   previous_msg_id = update.callback_query.message.message_id
@@ -299,10 +301,10 @@ Reply by {first_name} {last_name}, @{username} on {date}:
 
   message_to_save = await context.bot.edit_message_text(replied_message, message_id = question_message_id, chat_id = question_chat_id)
 
-  if "saved_messages" not in context.bot_data:
-    context.bot_data["saved_messages"] = {}
+  if "answered_questions" not in context.bot_data:
+    context.bot_data["answered_questions"] = {}
   
-  context.bot_data["saved_messages"][question_message_id] = message_to_save
+  context.bot_data["answered_questions"][question_message_id] = message_to_save
   
   del context.user_data["reply_msg"]
   del context.user_data["reply_info"]
