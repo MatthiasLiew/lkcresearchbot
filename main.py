@@ -152,24 +152,24 @@ async def cancel_question(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
   question_info = context.user_data["question_info"]
   question_message_id = question_info[0]
   question_chat_id = question_info[1]
-  
-  if "follow_up_info" in context.user_data:
-    follow_up_info = context.user_data["follow_up_info"]
-    reply_keyboard = reply_keyboard = [
-      [InlineKeyboardButton("Ask Follow-Up Question", callback_data=f"follow_up {follow_up_info[2]}")]
-    ]
-    await context.bot.edit_message_text(
-      follow_up_info[3], message_id = follow_up_info[0], chat_id = follow_up_info[1],
-      reply_markup=InlineKeyboardMarkup(
-          reply_keyboard, one_time_keyboard=True
-      )
-    )
-  else:
-    await context.bot.edit_message_text(
-      "Cancelled.", message_id = question_message_id, chat_id = question_chat_id
-    )
    
   try:
+    if "follow_up_info" in context.user_data:
+      follow_up_info = context.user_data["follow_up_info"]
+      reply_keyboard = reply_keyboard = [
+        [InlineKeyboardButton("Ask Follow-Up Question", callback_data=f"follow_up {follow_up_info[2]}")]
+      ]
+      await context.bot.edit_message_text(
+        follow_up_info[3], message_id = follow_up_info[0], chat_id = follow_up_info[1],
+        reply_markup=InlineKeyboardMarkup(
+            reply_keyboard, one_time_keyboard=True
+        )
+      )
+    else:
+      await context.bot.edit_message_text(
+        "Cancelled.", message_id = question_message_id, chat_id = question_chat_id
+      )
+      
     for key, val in context.user_data["question_to_delete"].items():
       await delete_message(chat_id = val, message_id = key, time = 0, context = context)
     del context.user_data["question_to_delete"]
@@ -297,6 +297,7 @@ Reply:"""
     replied = await replied.edit_text(to_send, reply_markup=InlineKeyboardMarkup(
           reply_keyboard, one_time_keyboard=True
       ))
+    await replied.reply_text("This reponse was edited!", quote = True)
   else:
     replied = await context.bot.send_message(question_user_id, to_send, reply_markup=InlineKeyboardMarkup(
           reply_keyboard, one_time_keyboard=True
@@ -503,13 +504,13 @@ def main() -> None:
     ))
     application.add_handler(tele_question)
     application.add_handler(tele_reply)
-    application.run_webhook(
-      listen = "0.0.0.0",
-      port = PORT,
-      url_path = TOKEN,
-      webhook_url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}"
-    )
-    #application.run_polling()
+    #application.run_webhook(
+    #  listen = "0.0.0.0",
+    #  port = PORT,
+    #  url_path = TOKEN,
+    #  webhook_url = f"https://lkcresearchtest2-matthiasliew.koyeb.app/{TOKEN}"
+    #)
+    application.run_polling()
     
 if __name__ == "__main__":
     main()
